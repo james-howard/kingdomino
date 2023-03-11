@@ -1,5 +1,7 @@
-import math
+import kingdomino
 import pygame
+import render
+import sys
 
 
 def main_loop():
@@ -13,17 +15,38 @@ def main_loop():
 
     dim = min(pygame.display.get_desktop_sizes()[0]) - 100
 
-    screen = pygame.display.set_mode((dim, dim), flags=pygame.SCALED, vsync=1)
+    screen = pygame.display.set_mode((dim, dim), flags=pygame.RESIZABLE, vsync=1)
+
+    game = kingdomino.Game([kingdomino.Player() for i in range(0, 4)])
+
+    renderer = render.Renderer()
+
+    turn_length = 500
+    last_turn_ticks = pygame.time.get_ticks()
 
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return
+                sys.exit(1)
 
-        v = (math.cos(pygame.time.get_ticks() / 100.0) + 1.0) * 127.5
-        c = pygame.color.Color(5, int(v), 5)
+        # clear screen
+        c = pygame.color.Color(0, 0, 0)
         screen.fill(c)
+
+        # run simulation
+        now = pygame.time.get_ticks()
+        if now - last_turn_ticks > turn_length:
+            game.step()
+            last_turn_ticks = now
+
+        # render
+        renderer.draw(screen, game)
         pygame.display.flip()
+
+        # lock to 30fps for battery life
+        pygame.time.wait(34)
+
+
 
 
 if __name__ == '__main__':
