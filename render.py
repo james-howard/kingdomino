@@ -3,6 +3,7 @@ Board and game state rendering
 """
 
 import pygame
+import pygame.draw
 import kingdomino
 
 # all of the values below are in the native coordinate system of the renderer.
@@ -22,11 +23,19 @@ SCENE_WIDTH = BOARD_SIZE * 4 + \
               SPACING * 5
 
 # how tall our game scene is. 1 board high, plus 4 tiles with spacing for the dealt tiles.
-SCENE_HEIGHT = BOARD_SIZE + \
-               SPACING * 2 + \
-               CELL_SIZE * 4 + \
-               SPACING * 4
+SCENE_HEIGHT = SPACING + \
+               CELL_SIZE * 4 + SPACING * 3 + \
+               SPACING + \
+               BOARD_SIZE + \
+               SPACING
 
+# If true, draw a second view of each board from the tile placement history.
+DRAW_TILE_HISTORY = False
+
+if DRAW_TILE_HISTORY:
+    SCENE_HEIGHT += \
+        BOARD_SIZE + \
+        SPACING
 
 class Renderer (object):
     def __init__(self):
@@ -75,7 +84,10 @@ class Renderer (object):
             self.scratch = pygame.Surface((width, height))
 
         # scale game buffer to scratch buffer
-        pygame.transform.smoothscale(self.surface, (width, height), dest_surface=self.scratch)
+        # smoothscale will do a bilinear filter, scale is nearest.
+        # i kinda think nearest looks best for the blocky aesthetic
+        #pygame.transform.smoothscale(self.surface, (width, height), dest_surface=self.scratch)
+        pygame.transform.scale(self.surface, (width, height), dest_surface=self.scratch)
 
         # blit scratch buffer to the screen
         screen.blit(self.scratch, (x, y))
@@ -103,7 +115,7 @@ class Renderer (object):
         r = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE)
         self.surface.fill(c, r)
         # c = (32, 32, 32)
-        # pygame.gfxdraw.rect(self.surface, r, c)
+        # pygame.draw.rect(self.surface, c, r, width=1)
 
 
     def draw_board(self, player: kingdomino.Player):
@@ -114,6 +126,31 @@ class Renderer (object):
             for x in range(0, BOARD_MAX_TILES):
                 cell = player.at((x-4, y-4))
                 self.draw_cell(cell, ox + (x * CELL_SIZE), oy + (y * CELL_SIZE))
+        if DRAW_TILE_HISTORY:
+            self.draw_history(player)
+
+    def draw_history(self, player: kingdomino.Player):
+        i = (player.number - 1)
+        ox = SPACING + (SPACING * i) + BOARD_SIZE * i
+        oy = SPACING * 6 + CELL_SIZE * 4 + BOARD_SIZE
+        r = pygame.Rect(ox, oy, BOARD_SIZE, BOARD_SIZE)
+        self.surface.fill((0, 0, 0), r)
+
+        for tile, placing in player.placement_history:
+            x0 = (placing[0][0] + 4) * CELL_SIZE
+            y0 = (placing[0][1] + 4) * CELL_SIZE
+            self.draw_cell(tile.cells[0], ox + x0, oy + y0)
+            x1 = (placing[1][0] + 4) * CELL_SIZE
+            y1 = (placing[1][1] + 4) * CELL_SIZE
+            self.draw_cell(tile.cells[1], ox + x1, oy + y1)
+            x_min = min(x0, x1)
+            y_min = min(y0, y1)
+            x_max = max(x0, x1) + CELL_SIZE
+            y_max = max(y0, y1) + CELL_SIZE
+            assert((x_max - x_min) * (y_max - y_min) == CELL_SIZE * CELL_SIZE * 2)
+            r = pygame.Rect(ox + x_min, oy + y_min, x_max - x_min, y_max - y_min)
+            pygame.draw.rect(self.surface, (255, 255, 255), r, width=2)
+
 
     def draw(self, screen: pygame.Surface, game: kingdomino.Game):
         self.update_time()

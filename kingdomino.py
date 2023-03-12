@@ -107,6 +107,7 @@ class Player (object):
         self.number = 0  # assigned by game, in range 1-4 according to initial random order.
         self.grid = [[Cell() for i in range(0, 10)] for j in range(0, 10)]
         self.at(0, 0).environment = Environment.BASE
+        self.placement_history = []  # ordered list of (tile, placing) with entries for each tile placed.
         self.name = "Player"
 
     def __repr__(self):
@@ -156,6 +157,7 @@ class Player (object):
         self.grid[x+5][y+5] = cell
 
     def set_tile(self, placement, tile):
+        self.placement_history.append((tile, placement))
         self.set_cell(placement[0], tile.cells[0])
         self.set_cell(placement[1], tile.cells[1])
 

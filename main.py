@@ -21,7 +21,7 @@ def main_loop():
 
     renderer = render.Renderer()
 
-    turn_length = 500
+    turn_length = 100
     last_turn_ticks = pygame.time.get_ticks()
 
     while True:
